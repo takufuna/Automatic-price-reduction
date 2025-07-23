@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アイコン生成ツール</title>
+</head>
+<body>
+    <h1>メルカリ価格調整ツール - アイコン生成</h1>
+    <p>以下のキャンバスを右クリックして「名前を付けて画像を保存」でPNGファイルとして保存してください。</p>
+    
+    <h2>16x16 アイコン</h2>
+    <canvas id="icon16" width="16" height="16" style="border: 1px solid #ccc; image-rendering: pixelated; width: 64px; height: 64px;"></canvas>
+    
+    <h2>48x48 アイコン</h2>
+    <canvas id="icon48" width="48" height="48" style="border: 1px solid #ccc; width: 96px; height: 96px;"></canvas>
+    
+    <h2>128x128 アイコン</h2>
+    <canvas id="icon128" width="128" height="128" style="border: 1px solid #ccc; width: 128px; height: 128px;"></canvas>
+
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const center = size / 2;
+            const radius = size * 0.4;
+            
+            // 背景円
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(center, center, radius, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 白い縁
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = Math.max(1, size / 32);
+            ctx.stroke();
+            
+            // 価格タグ
+            const tagSize = size * 0.3;
+            const tagX = center - tagSize / 2;
+            const tagY = center - tagSize / 2;
+            
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(tagX, tagY, tagSize * 0.7, tagSize);
+            
+            // タグの角
+            ctx.beginPath();
+            ctx.moveTo(tagX + tagSize * 0.7, tagY);
+            ctx.lineTo(tagX + tagSize, tagY + tagSize / 2);
+            ctx.lineTo(tagX + tagSize * 0.7, tagY + tagSize);
+            ctx.closePath();
+            ctx.fill();
+            
+            // タグの穴
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(tagX + tagSize * 0.25, tagY + tagSize * 0.3, Math.max(1, size / 32), 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 下向き矢印
+            const arrowX = center + tagSize * 0.2;
+            const arrowY = center - tagSize * 0.1;
+            const arrowSize = tagSize * 0.4;
+            
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = Math.max(1, size / 24);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // 矢印の縦線
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX, arrowY + arrowSize);
+            ctx.stroke();
+            
+            // 矢印の先端
+            const arrowHeadSize = arrowSize * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(arrowX - arrowHeadSize, arrowY + arrowSize - arrowHeadSize);
+            ctx.lineTo(arrowX, arrowY + arrowSize);
+            ctx.lineTo(arrowX + arrowHeadSize, arrowY + arrowSize - arrowHeadSize);
+            ctx.stroke();
+        }
+        
+        // 各サイズのアイコンを描画
+        drawIcon(document.getElementById('icon16'), 16);
+        drawIcon(document.getElementById('icon48'), 48);
+        drawIcon(document.getElementById('icon128'), 128);
+        
+        // 自動ダウンロード機能
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // ボタンを追加
+        const downloadButtons = document.createElement('div');
+        downloadButtons.innerHTML = `
+            <h2>自動ダウンロード</h2>
+            <button onclick="downloadCanvas(document.getElementById('icon16'), 'icon16.png')">16x16をダウンロード</button>
+            <button onclick="downloadCanvas(document.getElementById('icon48'), 'icon48.png')">48x48をダウンロード</button>
+            <button onclick="downloadCanvas(document.getElementById('icon128'), 'icon128.png')">128x128をダウンロード</button>
+            <br><br>
+            <button onclick="downloadAll()">全てダウンロード</button>
+        `;
+        document.body.appendChild(downloadButtons);
+        
+        function downloadAll() {
+            setTimeout(() => downloadCanvas(document.getElementById('icon16'), 'icon16.png'), 100);
+            setTimeout(() => downloadCanvas(document.getElementById('icon48'), 'icon48.png'), 200);
+            setTimeout(() => downloadCanvas(document.getElementById('icon128'), 'icon128.png'), 300);
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        canvas {
+            margin: 10px;
+            background: white;
+        }
+        
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #ff5252;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>メルカリ価格調整ツール</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 380px;
+      min-height: 500px;
+      padding: 0;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'ヒラギノ角ゴ ProN W3', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+    }
+    
+    .container {
+      background: white;
+      margin: 0;
+      min-height: 500px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .header .subtitle {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 5px;
+    }
+    
+    .content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .status-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid #ddd;
+      transition: all 0.3s ease;
+    }
+    
+    .status-card.enabled {
+      border-left-color: #10ac84;
+      background: linear-gradient(135deg, #d1f2eb 0%, #a3e4d7 100%);
+    }
+    
+    .status-card.disabled {
+      border-left-color: #ee5a24;
+      background: linear-gradient(135deg, #fadbd8 0%, #f1948a 100%);
+    }
+    
+    .status-text {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-detail {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    .toggle-section {
+      margin-bottom: 24px;
+    }
+    
+    .toggle-button {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .toggle-button.start {
+      background: linear-gradient(135deg, #10ac84 0%, #1dd1a1 100%);
+      color: white;
+    }
+    
+    .toggle-button.start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(16, 172, 132, 0.4);
+    }
+    
+    .toggle-button.stop {
+      background: linear-gradient(135deg, #ee5a24 0%, #ff6348 100%);
+      color: white;
+    }
+    
+    .toggle-button.stop:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(238, 90, 36, 0.4);
+    }
+    
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .action-btn {
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    
+    .action-btn.primary {
+      background: linear-gradient(135deg, #3742fa 0%, #5352ed 100%);
+      color: white;
+    }
+    
+    .action-btn.secondary {
+      background: linear-gradient(135deg, #57606f 0%, #747d8c 100%);
+      color: white;
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .input-group {
+      margin-bottom: 16px;
+    }
+    
+    .input-group.full-width {
+      grid-column: 1 / -1;
+    }
+    
+    .input-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e8ed;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      background: white;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: #3742fa;
+      box-shadow: 0 0 0 3px rgba(55, 66, 250, 0.1);
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border: 1px solid #e1e8ed;
+    }
+    
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .product-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #e1e5e9;
+      border-radius: 8px;
+      background: white;
+    }
+    
+    .product-item {
+      padding: 12px;
+      border-bottom: 1px solid #f1f3f4;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    
+    .product-item:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .product-item:last-child {
+      border-bottom: none;
+    }
+    
+    .product-item.selected {
+      background-color: #e3f2fd;
+      border-left: 4px solid #2196f3;
+    }
+    
+    .product-checkbox {
+      margin-right: 12px;
+      cursor: pointer;
+    }
+    
+    .product-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .product-name {
+      font-weight: 500;
+      color: #333;
+      font-size: 14px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .product-price {
+      font-weight: 600;
+      color: #ff6b6b;
+      font-size: 16px;
+      white-space: nowrap;
+    }
+    
+    .product-url {
+      font-size: 11px;
+      color: #666;
+      text-decoration: none;
+      opacity: 0.7;
+    }
+    
+    .product-url:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    
+    .selection-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .select-btn {
+      padding: 6px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      color: #666;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .select-btn:hover {
+      background: #f5f5f5;
+      border-color: #ccc;
+    }
+    
+    .selected-count {
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .no-products {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .no-products .icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+      opacity: 0.5;
+    }
+    
+    .product-status {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #e1f5fe;
+      color: #0277bd;
+    }
+    
+    .logs {
+      max-height: 120px;
+      overflow-y: auto;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    
+    .log-entry {
+      margin-bottom: 6px;
+      padding: 4px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    
+    .log-time {
+      color: #666;
+      font-size: 10px;
+      min-width: 50px;
+    }
+    
+    .log-success {
+      color: #10ac84;
+    }
+    
+    .log-error {
+      color: #ee5a24;
+    }
+    
+    .log-info {
+      color: #3742fa;
+    }
+    
+    .empty-state {
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+      padding: 20px;
+    }
+    
+    .badge {
+      background: #3742fa;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+    
+    .next-execution {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+    }
+    
+    /* スクロールバーのスタイル */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a1a1a1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>🏷️ メルカリ価格調整ツール</h2>
+      <div class="subtitle">自動値下げで売上アップ！</div>
+    </div>
+    
+    <div class="content">
+      <div id="statusCard" class="status-card disabled">
+        <div class="status-text">
+          <span id="statusIcon">⏸️</span>
+          <span id="statusText">自動実行: 停止中</span>
+        </div>
+        <div class="status-detail" id="statusDetail">
+          手動で開始してください
+        </div>
+        <div class="next-execution" id="nextExecution"></div>
+      </div>
+      
+      <div class="toggle-section">
+        <button id="toggleBtn" class="toggle-button start">
+          <span>▶️</span>
+          自動実行を開始
+        </button>
+      </div>
+      
+      <div class="action-buttons">
+        <button id="scanBtn" class="action-btn primary">
+          <span>🔍</span>
+          商品スキャン
+        </button>
+        <button id="settingsBtn" class="action-btn secondary">
+          <span>⚙️</span>
+          詳細設定
+        </button>
+      </div>
+      
+      <div class="settings-grid">
+        <div class="input-group">
+          <label class="input-label" for="minPrice">最低価格</label>
+          <input type="number" id="minPrice" class="input-field" value="300" min="100" placeholder="300">
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label" for="reduction">値下げ額</label>
+          <input type="number" id="reduction" class="input-field" value="100" min="50" placeholder="100">
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label" for="startTime">開始時刻</label>
+          <input type="time" id="startTime" class="input-field" value="09:00">
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label" for="endTime">終了時刻</label>
+          <input type="time" id="endTime" class="input-field" value="21:00">
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">
+          <span>📦</span>
+          商品リスト
+          <span class="badge" id="productCount">0</span>
+        </div>
+        
+        <!-- 選択状況表示 -->
+        <div id="selectedCount" class="selected-count" style="display: none;">
+          <span id="selectedCountText">0件選択中</span>
+        </div>
+        
+        <!-- 選択コントロール -->
+        <div id="selectionControls" class="selection-controls" style="display: none;">
+          <button class="select-btn" id="selectAllBtn">全選択</button>
+          <button class="select-btn" id="selectNoneBtn">全解除</button>
+          <button class="select-btn" id="selectHighPriceBtn">高額商品</button>
+          <button class="select-btn" id="selectLowPriceBtn">低額商品</button>
+        </div>
+        
+        <!-- 商品リスト -->
+        <div id="productList" class="product-list">
+          <div class="no-products">
+            <div class="icon">📦</div>
+            <div>商品をスキャンしてください</div>
+          </div>
+        </div>
+        
+        <!-- 選択商品の価格調整ボタン -->
+        <div id="adjustSelectedSection" style="display: none; margin-top: 15px;">
+          <button id="adjustSelectedBtn" class="action-btn primary" style="width: 100%;">
+            <span>💰</span>
+            選択商品を値下げ
+          </button>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">
+          <span>📋</span>
+          実行ログ
+        </div>
+        <div id="logs" class="logs">
+          <div class="log-entry log-info">
+            <span class="log-time">--:--</span>
+            <span>ログが表示されます</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

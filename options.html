@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メルカリ価格調整ツール - 詳細設定</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <!-- ヘッダー -->
+    <header class="header">
+      <h1 class="title">メルカリ価格調整ツール - 詳細設定</h1>
+    </header>
+
+    <div class="content">
+      <!-- 基本設定 -->
+      <section class="section">
+        <h2 class="section-title">基本設定</h2>
+        
+        <div class="setting-group">
+          <div class="setting-item">
+            <label for="enableExtension">拡張機能を有効にする</label>
+            <input type="checkbox" id="enableExtension" class="toggle">
+          </div>
+          
+          <div class="setting-item">
+            <label for="minPrice">最低価格（円）</label>
+            <input type="number" id="minPrice" min="100" step="100" value="300">
+          </div>
+          
+          <div class="setting-item">
+            <label for="priceReduction">値下げ金額（円）</label>
+            <input type="number" id="priceReduction" min="50" step="50" value="100">
+          </div>
+        </div>
+      </section>
+
+      <!-- 実行時間設定 -->
+      <section class="section">
+        <h2 class="section-title">実行時間設定</h2>
+        
+        <div class="setting-group">
+          <div class="setting-item">
+            <label for="startTime">開始時間</label>
+            <input type="time" id="startTime" value="09:00">
+          </div>
+          
+          <div class="setting-item">
+            <label for="endTime">終了時間</label>
+            <input type="time" id="endTime" value="21:00">
+          </div>
+          
+          <div class="setting-item">
+            <label for="executionInterval">実行間隔（日）</label>
+            <select id="executionInterval">
+              <option value="1">毎日</option>
+              <option value="2">2日に1回</option>
+              <option value="3">3日に1回</option>
+              <option value="7">週に1回</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 安全設定 -->
+      <section class="section">
+        <h2 class="section-title">安全設定</h2>
+        
+        <div class="setting-group">
+          <div class="setting-item">
+            <label for="maxProductsPerDay">1日あたりの最大処理商品数</label>
+            <input type="number" id="maxProductsPerDay" min="1" max="50" value="10">
+          </div>
+          
+          <div class="setting-item">
+            <label for="requestDelay">リクエスト間隔（秒）</label>
+            <input type="number" id="requestDelay" min="1" max="60" value="5">
+          </div>
+          
+          <div class="setting-item">
+            <label for="confirmBeforeExecution">実行前に確認する</label>
+            <input type="checkbox" id="confirmBeforeExecution" class="toggle" checked>
+          </div>
+        </div>
+      </section>
+
+      <!-- 通知設定 -->
+      <section class="section">
+        <h2 class="section-title">通知設定</h2>
+        
+        <div class="setting-group">
+          <div class="setting-item">
+            <label for="enableNotifications">通知を有効にする</label>
+            <input type="checkbox" id="enableNotifications" class="toggle" checked>
+          </div>
+          
+          <div class="setting-item">
+            <label for="notifyOnSuccess">成功時に通知</label>
+            <input type="checkbox" id="notifyOnSuccess" class="toggle" checked>
+          </div>
+          
+          <div class="setting-item">
+            <label for="notifyOnError">エラー時に通知</label>
+            <input type="checkbox" id="notifyOnError" class="toggle" checked>
+          </div>
+          
+          <div class="setting-item">
+            <label for="dailySummary">日次サマリー通知</label>
+            <input type="checkbox" id="dailySummary" class="toggle">
+          </div>
+        </div>
+      </section>
+
+      <!-- ログ設定 -->
+      <section class="section">
+        <h2 class="section-title">ログ設定</h2>
+        
+        <div class="setting-group">
+          <div class="setting-item">
+            <label for="logRetentionDays">ログ保持期間（日）</label>
+            <select id="logRetentionDays">
+              <option value="7">7日</option>
+              <option value="14">14日</option>
+              <option value="30" selected>30日</option>
+              <option value="90">90日</option>
+            </select>
+          </div>
+          
+          <div class="setting-item">
+            <label for="detailedLogging">詳細ログを記録</label>
+            <input type="checkbox" id="detailedLogging" class="toggle">
+          </div>
+        </div>
+      </section>
+
+      <!-- データ管理 -->
+      <section class="section">
+        <h2 class="section-title">データ管理</h2>
+        
+        <div class="setting-group">
+          <div class="action-buttons">
+            <button id="exportSettings" class="btn btn-secondary">設定をエクスポート</button>
+            <button id="importSettings" class="btn btn-secondary">設定をインポート</button>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+          </div>
+          
+          <div class="action-buttons">
+            <button id="exportLogs" class="btn btn-secondary">ログをエクスポート</button>
+            <button id="clearAllData" class="btn btn-danger">全データをクリア</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 保存・リセット -->
+      <section class="section">
+        <div class="action-buttons">
+          <button id="saveSettings" class="btn btn-primary">設定を保存</button>
+          <button id="resetSettings" class="btn btn-secondary">デフォルトに戻す</button>
+        </div>
+      </section>
+
+      <!-- ステータス表示 -->
+      <div id="statusMessage" class="status-message"></div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
