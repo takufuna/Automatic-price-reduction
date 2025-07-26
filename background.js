@@ -53,7 +53,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 async function handleDailyPriceAdjustment() {
   try {
     const settings = await chrome.storage.local.get([
-      'isEnabled', 'startTime', 'endTime', 'selectedProducts', 'minPrice'
+      'isEnabled', 'startTime', 'endTime', 'selectedProducts', 'minPrice', 'reduction'
     ]);
     
     if (!settings.isEnabled) {
@@ -136,8 +136,9 @@ async function executePriceAdjustment(settings) {
     // コンテンツスクリプトに価格調整を指示
     await chrome.tabs.sendMessage(targetTab.id, {
       action: 'adjustPrices',
-      selectedProducts: settings.selectedProducts,
-      minPrice: settings.minPrice
+      products: settings.selectedProducts || [],
+      reduction: settings.reduction || 100,
+      minPrice: settings.minPrice || 300
     });
     
   } catch (error) {
@@ -205,6 +206,90 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // オプション画面からの設定更新通知
     console.log('設定が更新されました:', request.settings);
     sendResponse({ success: true });
+    return true;
+  }
+  
+  if (request.action === 'openEditPage') {
+    // 編集ページを新しいタブで開く
+    try {
+      chrome.tabs.create({ url: request.url }, (tab) => {
+        if (chrome.runtime.lastError) {
+          console.error('❌ タブ作成エラー:', chrome.runtime.lastError);
+          sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        
+        console.log(`📂 編集ページを開きました: ${request.url}`);
+        console.log(`🆔 商品ID: ${request.productId}, 新価格: ${request.newPrice}円`);
+        
+        // ページが読み込まれたら価格変更スクリプトを実行
+        const listener = (tabId, changeInfo) => {
+          if (tabId === tab.id && changeInfo.status === 'complete') {
+            console.log('📄 編集ページの読み込み完了');
+            chrome.tabs.onUpdated.removeListener(listener);
+            
+            // 少し待ってからスクリプトを注入（ページの完全な読み込みを待つ）
+            setTimeout(() => {
+              console.log('🔧 価格変更スクリプトを注入中...');
+              
+              chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ['price-editor.js']
+              }).then(() => {
+                console.log('✅ スクリプト注入完了');
+                
+                // さらに少し待ってから価格変更メッセージを送信
+                setTimeout(() => {
+                  console.log('💬 価格変更メッセージを送信中...');
+                  
+                  chrome.tabs.sendMessage(tab.id, {
+                    action: 'updatePrice',
+                    productId: request.productId,
+                    newPrice: request.newPrice
+                  }, (response) => {
+                    if (chrome.runtime.lastError) {
+                      console.error('❌ 価格変更エラー:', chrome.runtime.lastError);
+                      // エラー時はタブを閉じる
+                      chrome.tabs.remove(tab.id);
+                      sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                    } else {
+                      console.log('✅ 価格変更完了:', response);
+                      sendResponse({ success: true, result: response });
+                    }
+                  });
+                }, 2000); // 2秒待機
+              }).catch((error) => {
+                console.error('❌ スクリプト注入エラー:', error);
+                chrome.tabs.remove(tab.id);
+                sendResponse({ success: false, error: error.message });
+              });
+            }, 1000); // 1秒待機
+          }
+        };
+        
+        chrome.tabs.onUpdated.addListener(listener);
+        
+        // タブ作成の成功を即座に返す（非同期処理は継続）
+        sendResponse({ success: true, tabId: tab.id });
+      });
+    } catch (error) {
+      console.error('❌ タブ作成エラー:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+    return true;
+  }
+  
+  if (request.action === 'closeTab') {
+    // 現在のタブを閉じる
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs.length > 0) {
+        console.log('🔒 タブを閉じます:', tabs[0].id);
+        chrome.tabs.remove(tabs[0].id);
+        sendResponse({ success: true });
+      } else {
+        sendResponse({ success: false, error: 'アクティブなタブが見つかりません' });
+      }
+    });
     return true;
   }
 });

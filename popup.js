@@ -175,6 +175,7 @@ async function loadLogs() {
     console.log('ログ読み込み完了:', currentSettings.executionLogs.length + '件');
   } catch (error) {
     console.error('ログの読み込みに失敗:', error);
+    addLog('ログの読み込みに失敗しました', 'error');
   }
 }
 
@@ -212,7 +213,17 @@ function updateUI() {
 
 // 商品表示
 function displayProducts(products) {
+  console.log('displayProducts関数が呼び出されました');
+  console.log('受信した商品データ:', products);
+  console.log('商品数:', products ? products.length : 0);
+  
   allProducts = products || [];
+  console.log('allProductsに設定:', allProducts.length, '件');
+  
+  // DOM要素の存在確認
+  console.log('productList要素:', productList ? '存在' : 'なし');
+  console.log('selectionControls要素:', selectionControls ? '存在' : 'なし');
+  console.log('adjustSelectedSection要素:', adjustSelectedSection ? '存在' : 'なし');
   
   if (allProducts.length === 0) {
     productList.innerHTML = `
@@ -229,13 +240,24 @@ function displayProducts(products) {
   }
   
   // 商品リストのHTMLを生成
-  const productsHtml = allProducts.map(product => {
-    const isSelected = selectedProductIds.has(product.id);
+  console.log('商品HTML生成を開始...');
+  const productsHtml = allProducts.map((product, index) => {
+    console.log(`商品 ${index + 1} のHTML生成:`, {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      url: product.url
+    });
+    
+    const productId = product.id || product.productId || `product_${index}`;
+    const isSelected = selectedProductIds.has(productId);
     const priceDisplay = formatPrice(product.price);
     const productUrl = product.url || '#';
     
-    return `
-      <div class="product-item ${isSelected ? 'selected' : ''}" data-product-id="${product.id}">
+    console.log(`商品ID: ${productId}, 選択状態: ${isSelected}, 価格表示: ${priceDisplay}`);
+    
+    const htmlContent = `
+      <div class="product-item ${isSelected ? 'selected' : ''}" data-product-id="${productId}">
         <input type="checkbox" class="product-checkbox" ${isSelected ? 'checked' : ''}>
         <div class="product-info">
           <div class="product-name" title="${product.name || '商品名不明'}">
@@ -248,16 +270,33 @@ function displayProducts(products) {
         </div>
       </div>
     `;
+    
+    console.log(`商品 ${index + 1} のHTML:`, htmlContent.substring(0, 100) + '...');
+    return htmlContent;
   }).join('');
   
   // 商品リストにHTMLを設定
-  productList.innerHTML = productsHtml;
+  console.log('生成したHTMLの長さ:', productsHtml.length);
+  console.log('HTMLの最初の100文字:', productsHtml.substring(0, 100));
+  
+  if (productList) {
+    productList.innerHTML = productsHtml;
+    console.log('productListにHTMLを設定完了');
+    console.log('設定後のproductList.children.length:', productList.children.length);
+  } else {
+    console.error('productList要素が見つかりません');
+  }
   
   // コントロールを表示
-  selectionControls.style.display = 'flex';
+  if (selectionControls) {
+    selectionControls.style.display = 'flex';
+    console.log('selectionControlsを表示');
+  }
   
   // 商品数と選択状態を更新
+  console.log('updateSelectionUIを呼び出し中...');
   updateSelectionUI();
+  console.log('updateSelectionUI完了');
   
   // 商品アイテムのイベントリスナーを追加
   document.querySelectorAll('.product-item').forEach(item => {
@@ -425,6 +464,12 @@ async function handleAdjustSelected() {
     return;
   }
   
+  // 送信用に軽量化し、価格を数値に正規化
+  const compactProducts = selectedProducts.map(p => ({
+    id: p.id,
+    price: typeof p.price === 'string' ? parseInt(String(p.price).replace(/[^\d]/g, ''), 10) : p.price
+  }));
+  
   try {
     adjustSelectedBtn.disabled = true;
     adjustSelectedBtn.innerHTML = '<span>⏳</span>処理中...';
@@ -435,7 +480,7 @@ async function handleAdjustSelected() {
     // コンテンツスクリプトに価格調整を依頼
     const response = await chrome.tabs.sendMessage(tab.id, {
       action: 'adjustPrices',
-      products: selectedProducts,
+      products: compactProducts,
       reduction: currentSettings.reduction,
       minPrice: currentSettings.minPrice
     });
@@ -534,6 +579,39 @@ function handleSettingChange() {
   updateUI();
 }
 
+// UI更新
+function updateUI() {
+  console.log('UIを更新中...');
+  
+  // ステータス表示を更新
+  if (currentSettings.isEnabled) {
+    statusIcon.textContent = '✅';
+    statusText.textContent = '自動実行中';
+    statusDetail.textContent = '毎日ランダムな時間に実行されます';
+    statusCard.className = 'status-card enabled';
+    toggleBtn.innerHTML = '<span>⏸️</span>停止';
+    toggleBtn.className = 'btn btn-danger';
+    
+    // 次回実行時間を表示
+    nextExecution.textContent = `次回実行: ${getNextExecutionTime()}`;
+  } else {
+    statusIcon.textContent = '⏸️';
+    statusText.textContent = '停止中';
+    statusDetail.textContent = '自動実行は停止しています';
+    statusCard.className = 'status-card stopped';
+    toggleBtn.innerHTML = '<span>▶️</span>開始';
+    toggleBtn.className = 'btn btn-primary';
+    nextExecution.textContent = '';
+  }
+  
+  // 商品数を更新
+  if (productCount) {
+    productCount.textContent = allProducts.length;
+  }
+  
+  console.log('UI更新完了');
+}
+
 // イベントハンドラー関数
 
 // トグルボタンのクリックハンドラー
@@ -598,37 +676,64 @@ async function handleScanClick() {
     // コンテンツスクリプトが注入されているか確認
     let response;
     try {
+      console.log('コンテンツスクリプトにメッセージ送信中...');
       // まずコンテンツスクリプトにメッセージを送信
       response = await chrome.tabs.sendMessage(tab.id, { action: 'scanProducts' });
+      console.log('コンテンツスクリプトからのレスポンス:', response);
     } catch (connectionError) {
+      console.log('接続エラー:', connectionError.message);
       console.log('コンテンツスクリプトが注入されていないため、手動で注入します...');
       
-      // コンテンツスクリプトを手動で注入
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['content.js']
-      });
-      
-      // 少し待ってから再度メッセージ送信
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      response = await chrome.tabs.sendMessage(tab.id, { action: 'scanProducts' });
+      try {
+        // コンテンツスクリプトを手動で注入
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content.js']
+        });
+        console.log('コンテンツスクリプトの注入が完了しました');
+        
+        // 少し待ってから再度メッセージ送信
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log('再度メッセージ送信を試行中...');
+        response = await chrome.tabs.sendMessage(tab.id, { action: 'scanProducts' });
+        console.log('再送信後のレスポンス:', response);
+      } catch (injectionError) {
+        console.error('コンテンツスクリプトの注入に失敗:', injectionError);
+        throw new Error(`コンテンツスクリプトの注入に失敗: ${injectionError.message}`);
+      }
     }
     
     if (response && response.success) {
       const products = response.data || [];
       console.log('スキャン結果:', products);
+      console.log('受信した商品数:', products.length);
+      
+      // 各商品の詳細情報をログ出力
+      products.forEach((product, index) => {
+        console.log(`ポップアップで受信した商品 ${index + 1}:`, {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          url: product.url,
+          productId: product.productId
+        });
+      });
       
       if (products.length > 0) {
         // 商品情報を保存
         currentSettings.selectedProducts = products;
         await chrome.storage.local.set({ selectedProducts: products });
         
+        console.log('商品表示処理を開始...');
         displayProducts(products);
+        console.log('商品表示処理完了');
         addLog(`${products.length}件の商品を検出しました`, 'success');
       } else {
+        console.log('商品が0件のため警告表示');
         addLog('商品が見つかりませんでした', 'warning');
       }
     } else {
+      console.error('スキャンレスポンスエラー:', response);
       throw new Error(response?.error || 'スキャンに失敗しました');
     }
     
@@ -657,16 +762,6 @@ async function handleSettingsClick() {
 }
 
 // ユーティリティ関数
-function formatPrice(price) {
-  return price.toLocaleString() + '円';
-}
-
-function formatDateTime(dateString) {
-  const date = new Date(dateString);
-  return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-}
-
-// ユーティリティ関数
 
 // 価格をフォーマット
 function formatPrice(price) {
@@ -680,6 +775,62 @@ function formatPrice(price) {
 function formatDateTime(dateString) {
   const date = new Date(dateString);
   return date.toLocaleString('ja-JP');
+}
+
+// イベントリスナーの設定
+function setupEventListeners() {
+  console.log('イベントリスナーを設定中...');
+  
+  // トグルボタン
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', handleToggleClick);
+    console.log('トグルボタンのイベントリスナーを設定');
+  }
+  
+  // スキャンボタン
+  if (scanBtn) {
+    scanBtn.addEventListener('click', handleScanClick);
+    console.log('スキャンボタンのイベントリスナーを設定');
+  }
+  
+  // 設定ボタン
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', handleSettingsClick);
+    console.log('設定ボタンのイベントリスナーを設定');
+  }
+  
+  // 設定入力フィールド
+  if (minPriceInput) {
+    minPriceInput.addEventListener('change', handleSettingChange);
+  }
+  if (reductionInput) {
+    reductionInput.addEventListener('change', handleSettingChange);
+  }
+  if (startTimeInput) {
+    startTimeInput.addEventListener('change', handleSettingChange);
+  }
+  if (endTimeInput) {
+    endTimeInput.addEventListener('change', handleSettingChange);
+  }
+  
+  // 選択コントロールボタン
+  if (selectAllBtn) {
+    selectAllBtn.addEventListener('click', handleSelectAll);
+  }
+  if (selectNoneBtn) {
+    selectNoneBtn.addEventListener('click', handleSelectNone);
+  }
+  if (selectHighPriceBtn) {
+    selectHighPriceBtn.addEventListener('click', handleSelectHighPrice);
+  }
+  if (selectLowPriceBtn) {
+    selectLowPriceBtn.addEventListener('click', handleSelectLowPrice);
+  }
+  if (adjustSelectedBtn) {
+    adjustSelectedBtn.addEventListener('click', handleAdjustSelected);
+  }
+  
+  console.log('イベントリスナーの設定完了');
 }
 
 // グローバル関数としてエクスポート（HTMLから呼び出されるため）
