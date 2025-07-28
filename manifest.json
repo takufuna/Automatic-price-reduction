@@ -8,7 +8,8 @@
     "storage",
     "alarms",
     "activeTab",
-    "scripting"
+    "scripting",
+    "cookies"
   ],
   
   "host_permissions": [
@@ -31,11 +32,6 @@
         "https://localhost/*"
       ],
       "js": ["content.js"],
-      "run_at": "document_end"
-    },
-    {
-      "matches": ["https://jp.mercari.com/sell/edit/*"],
-      "js": ["price-editor.js"],
       "run_at": "document_end"
     }
   ],
